@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 790" width="1200" height="790" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3d4451"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#15803d"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8893a"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="790" fill="#f7f7f5"/>
+
+  <!-- ===== row 1: client, api, postgres ===== -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="50" width="180" height="80" rx="6" fill="#fff4a8"/>
+    <rect x="380" y="50" width="200" height="80" rx="10" fill="#d6e8ff"/>
+    <rect x="760" y="30" width="400" height="130" rx="12" fill="#d7f3e3"/>
+  </g>
+  <text x="130" y="86" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2328">Клиент</text>
+  <text x="130" y="108" text-anchor="middle" font-size="12" fill="#57606a">принимает webhook</text>
+
+  <text x="480" y="86" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2328">api</text>
+  <text x="480" y="108" text-anchor="middle" font-size="12" fill="#57606a">FastAPI · X-API-Key</text>
+
+  <text x="780" y="60" font-size="16" font-weight="700" fill="#1f2328">PostgreSQL</text>
+  <rect x="780" y="78" width="170" height="60" rx="8" fill="#ffffff" stroke="#3ba272" stroke-width="1.5"/>
+  <text x="865" y="104" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328">payments</text>
+  <text x="865" y="123" text-anchor="middle" font-size="11" fill="#57606a">pending → succeeded/failed</text>
+  <rect x="970" y="78" width="170" height="60" rx="8" fill="#ffffff" stroke="#3ba272" stroke-width="1.5"/>
+  <text x="1055" y="104" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328">outbox</text>
+  <text x="1055" y="123" text-anchor="middle" font-size="11" fill="#57606a">published_at IS NULL</text>
+
+  <!-- client -> api -->
+  <line x1="220" y1="90" x2="376" y2="90" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="298" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2328">POST /payments</text>
+  <text x="298" y="108" text-anchor="middle" font-size="11" fill="#57606a">Idempotency-Key</text>
+
+  <!-- api -> postgres -->
+  <line x1="580" y1="90" x2="776" y2="90" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="678" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2328">payment + событие</text>
+  <text x="678" y="108" text-anchor="middle" font-size="11" fill="#57606a">одна транзакция</text>
+
+  <!-- ===== relay ===== -->
+  <rect x="970" y="210" width="170" height="70" rx="10" fill="#e9ddff" filter="url(#shadow)"/>
+  <text x="1055" y="240" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2328">relay</text>
+  <text x="1055" y="261" text-anchor="middle" font-size="12" fill="#57606a">опрос раз в 1 с</text>
+
+  <line x1="1055" y1="138" x2="1055" y2="206" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1045" y="170" text-anchor="end" font-size="11" fill="#57606a">FOR UPDATE</text>
+  <text x="1045" y="184" text-anchor="end" font-size="11" fill="#57606a">SKIP LOCKED</text>
+
+  <!-- the message relay builds from an outbox row -->
+  <rect x="560" y="192" width="370" height="110" rx="6" fill="#fffbe6" stroke="#e0c95a" stroke-width="1.2" filter="url(#shadow)"/>
+  <text x="576" y="214" font-size="12" font-weight="700" fill="#1f2328">Сообщение из строки outbox</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#1f2328">
+    <text x="576" y="236" fill="#57606a">body</text><text x="680" y="236">{"payment_id": "01a10c5e-…"}</text>
+    <text x="576" y="254" fill="#57606a">message_id</text><text x="680" y="254">outbox.id</text>
+    <text x="576" y="272" fill="#57606a">type</text><text x="680" y="272">payment.created</text>
+    <text x="576" y="290" fill="#57606a">properties</text><text x="680" y="290">persistent, application/json</text>
+  </g>
+  <line x1="930" y1="247" x2="966" y2="247" stroke="#b8a23a" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+  <!-- ===== rabbitmq container ===== -->
+  <rect x="40" y="320" width="1120" height="250" rx="14" fill="#fff3e8" stroke="#f0a35e" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="60" y="346" font-size="16" font-weight="700" fill="#b45309">RabbitMQ</text>
+
+  <!-- exchange payments -->
+  <rect x="960" y="362" width="180" height="56" rx="28" fill="#ffd3a8" stroke="#e8893a" stroke-width="1.5"/>
+  <text x="1050" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2328">payments</text>
+  <text x="1050" y="404" text-anchor="middle" font-size="11" fill="#57606a">exchange · direct</text>
+
+  <line x1="1055" y1="280" x2="1055" y2="358" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1065" y="316" font-size="11" fill="#57606a">publish + confirm</text>
+
+  <!-- queue payments.new -->
+  <rect x="500" y="362" width="220" height="56" rx="8" fill="#ffffff" stroke="#e8893a" stroke-width="2"/>
+  <text x="610" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2328">payments.new</text>
+  <text x="610" y="404" text-anchor="middle" font-size="11" fill="#57606a">queue · durable</text>
+
+  <line x1="960" y1="390" x2="724" y2="390" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="842" y="380" text-anchor="middle" font-size="11" fill="#57606a">routing key payments.new</text>
+
+  <!-- retry queues -->
+  <rect x="760" y="480" width="180" height="56" rx="8" fill="#fffaf3" stroke="#e8893a" stroke-width="1.5"/>
+  <text x="850" y="504" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2328">payments.new.retry.1</text>
+  <text x="850" y="522" text-anchor="middle" font-size="11" fill="#57606a">ждёт 2 с</text>
+  <rect x="960" y="480" width="180" height="56" rx="8" fill="#fffaf3" stroke="#e8893a" stroke-width="1.5"/>
+  <text x="1050" y="504" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2328">payments.new.retry.2</text>
+  <text x="1050" y="522" text-anchor="middle" font-size="11" fill="#57606a">ждёт 4 с</text>
+
+  <!-- ttl expired -> back to exchange -->
+  <path d="M850,480 L850,450 L1000,450 L1000,422" fill="none" stroke="#e8893a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-orange)"/>
+  <line x1="1100" y1="480" x2="1100" y2="422" stroke="#e8893a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-orange)"/>
+  <text x="860" y="443" font-size="11" fill="#b45309">TTL истёк, обратно</text>
+
+  <!-- dlx + dlq -->
+  <rect x="80" y="362" width="200" height="56" rx="28" fill="#ffd6d6" stroke="#d9534f" stroke-width="1.5"/>
+  <text x="180" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2328">payments.dlx</text>
+  <text x="180" y="404" text-anchor="middle" font-size="11" fill="#57606a">dead-letter exchange</text>
+  <rect x="80" y="480" width="200" height="56" rx="8" fill="#ffffff" stroke="#d9534f" stroke-width="2"/>
+  <text x="180" y="504" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2328">payments.new.dlq</text>
+  <text x="180" y="522" text-anchor="middle" font-size="11" fill="#57606a">replay: Move messages</text>
+
+  <line x1="180" y1="418" x2="180" y2="476" stroke="#d9534f" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <line x1="500" y1="390" x2="284" y2="390" stroke="#c2410c" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <text x="392" y="380" text-anchor="middle" font-size="11" font-weight="600" fill="#c2410c">reject, попытка 3</text>
+  <text x="392" y="408" text-anchor="middle" font-size="11" fill="#c2410c">или битое сообщение</text>
+
+  <!-- ===== consumer ===== -->
+  <rect x="500" y="630" width="220" height="80" rx="10" fill="#d9f2d0" filter="url(#shadow)"/>
+  <text x="610" y="662" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2328">consumer</text>
+  <text x="610" y="684" text-anchor="middle" font-size="12" fill="#57606a">шлюз 2–5 с · 90% успех</text>
+
+  <line x1="610" y1="418" x2="610" y2="626" stroke="#3d4451" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="620" y="600" font-size="11" fill="#57606a">prefetch 10</text>
+
+  <!-- consumer -> retry queues -->
+  <path d="M720,650 L850,650 L850,540" fill="none" stroke="#c2410c" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <path d="M720,680 L1050,680 L1050,540" fill="none" stroke="#c2410c" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <text x="870" y="610" font-size="11" font-weight="600" fill="#c2410c">ошибка на попытке 1 или 2:</text>
+  <text x="870" y="625" font-size="11" fill="#c2410c">копия в retry.N, оригинал ack</text>
+
+  <!-- consumer -> postgres (same table as above, repeated to keep lines from crossing) -->
+  <rect x="270" y="612" width="190" height="60" rx="8" fill="#ffffff" stroke="#3ba272" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="365" y="636" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2328">PostgreSQL · payments</text>
+  <text x="365" y="655" text-anchor="middle" font-size="11" fill="#15803d">UPDATE … WHERE pending</text>
+  <line x1="500" y1="642" x2="464" y2="642" stroke="#15803d" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- consumer -> client webhook -->
+  <path d="M500,695 L20,695 L20,90 L36,90" fill="none" stroke="#15803d" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="260" y="714" text-anchor="middle" font-size="11" font-weight="600" fill="#15803d">webhook POST, тело как у GET</text>
+
+  <!-- ===== legend ===== -->
+  <g font-size="12" fill="#57606a">
+    <line x1="40" y1="752" x2="80" y2="752" stroke="#3d4451" stroke-width="2"/>
+    <text x="88" y="756">основной путь</text>
+    <line x1="200" y1="752" x2="240" y2="752" stroke="#15803d" stroke-width="2"/>
+    <text x="248" y="756">результат</text>
+    <line x1="340" y1="752" x2="380" y2="752" stroke="#c2410c" stroke-width="2"/>
+    <text x="388" y="756">ошибка</text>
+    <line x1="460" y1="752" x2="500" y2="752" stroke="#e8893a" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="508" y="756">dead-letter по TTL</text>
+    <text x="1160" y="756" text-anchor="end">отказ шлюза (10%) это статус failed, а не ошибка: retry не запускается</text>
+  </g>
+</svg>

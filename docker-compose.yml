@@ -1,0 +1,86 @@
+x-app: &app
+  build: .
+  environment:
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-payments}:${POSTGRES_PASSWORD:-payments}@postgres:5432/${POSTGRES_DB:-payments}
+    RABBITMQ_URL: amqp://${RABBITMQ_USER:-payments}:${RABBITMQ_PASSWORD:-payments}@rabbitmq:5672/
+    API_KEY: ${API_KEY:-dev-api-key}
+    WEBHOOK_ALLOW_PRIVATE_NETWORKS: ${WEBHOOK_ALLOW_PRIVATE_NETWORKS:-true}
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-payments}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payments}
+      POSTGRES_DB: ${POSTGRES_DB:-payments}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4.3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-payments}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-payments}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    <<: *app
+    command: alembic upgrade head
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  relay:
+    <<: *app
+    command: python -m app.messaging.relay
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  consumer:
+    <<: *app
+    command: python -m app.messaging.consumer
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  webhook-echo:
+    image: mendhak/http-https-echo:39
+
+volumes:
+  postgres_data:

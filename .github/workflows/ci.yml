@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: ruff
+        run: uv run ruff check .
+      - name: ruff format
+        run: uv run ruff format --check .
+      - name: mypy
+        run: uv run mypy app tests
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: payments
+          POSTGRES_PASSWORD: payments
+          POSTGRES_DB: payments
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payments"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      rabbitmq:
+        image: rabbitmq:4.3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: payments
+          RABBITMQ_DEFAULT_PASS: payments
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run pytest
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the stack
+        run: docker compose up -d --build
+      - name: Wait for the API
+        run: timeout 120 sh -c 'until curl -sf localhost:8000/health; do sleep 2; done'
+      - name: Payment reaches a final status and the webhook
+        run: |
+          id=$(curl -sf -X POST localhost:8000/api/v1/payments \
+            -H 'X-API-Key: dev-api-key' -H 'Idempotency-Key: ci-end-to-end' -H 'Content-Type: application/json' \
+            -d '{"amount": "10.00", "currency": "RUB", "webhook_url": "http://webhook-echo:8080/hook"}' \
+            | jq -r .payment_id)
+          echo "payment $id"
+          timeout 60 sh -c "until curl -sf localhost:8000/api/v1/payments/$id -H 'X-API-Key: dev-api-key' \
+            | jq -e '.status != \"pending\"'; do sleep 1; done"
+          timeout 30 sh -c "until docker compose logs webhook-echo | grep -q $id; do sleep 1; done"
+      - name: Logs
+        if: failure()
+        run: docker compose logs

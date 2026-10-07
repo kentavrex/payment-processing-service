@@ -1,0 +1,16 @@
+{
+	https_port 8443
+}
+
+http://{$DOMAIN} {
+	redir https://{$DOMAIN}:8443{uri} permanent
+}
+
+{$DOMAIN} {
+	tls {
+		issuer acme {
+			disable_tlsalpn_challenge
+		}
+	}
+	reverse_proxy api:8000
+}

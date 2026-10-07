@@ -1,0 +1,28 @@
+services:
+  api:
+    environment:
+      API_KEY: ${API_KEY:?Set API_KEY in .env}
+
+  consumer:
+    environment:
+      WEBHOOK_ALLOW_PRIVATE_NETWORKS: "false"
+
+  webhook-echo:
+    profiles: [demo]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8443:8443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
